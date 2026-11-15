@@ -6,6 +6,7 @@
 <meta name="color-scheme" content="light">
 <title>Афиша: экстатик, контакт, импро</title>
 <meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{--fg:#1d1d1f;--muted:#6e6e73;--line:#e6e6ea;--soft:#f4f4f6;--accent:#e8702a;--accent-soft:#fdf0e6;--accent-dark:#b9541a;--we:#fbf6f1;--ok:#1d7f55;--ok-soft:#e5f3ec;--err:#b3261e}
@@ -261,11 +262,18 @@ async function decryptKey(box, k) {
     throw new Error('Ссылка устарела — открой афишу заново из бота');
   }
 }
-function viaChat(path, body) {  // «Иду», «Пас», оценки из мини-приложения — командой боту
+async function sign(msg) {  // HMAC тем же ключом, что и данные: бот проверит, что ссылка из этой афиши
+  const raw = b64(APP_KEY.replace(/-/g, '+').replace(/_/g, '/'));
+  const key = await crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg)));
+  return btoa(String.fromCharCode(...mac)).replace(/\+/g, '-').replace(/\//g, '_').slice(0, 10);
+}
+async function viaChat(path, body) {  // «Иду», «Пас», оценки из мини-приложения — командой боту
   const cmd = path === 'api/vote' ? body.vote : path.slice(4);
+  const tag = await sign(`${cmd}_${body.key}`);
   if (path === 'api/vote') markLocal(body.key, 'vote', body.vote);
   else markLocal(body.key, 'plan', path === 'api/go' ? 'going' : 'skipped');
-  openUrl(`https://t.me/${BOT}?start=${cmd}_${body.key}`);
+  openUrl(`https://t.me/${BOT}?start=${cmd}_${body.key}_${tag}`);
   return { message: 'Отправила в чат с пупой' };
 }
 function lockForm(wrong) {
@@ -305,11 +313,13 @@ function setData(d) {
   const events = (Array.isArray(d && d.events) ? d.events : [])
     .filter(e => e && e.key && isDate(e.date))
     .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
-  if (APP_KEY) {
-    const m = localMarks();
+  if (APP_KEY) {  // свои нажатия — поверх данных, пока их не выложили (published_at) и не дольше LOCAL_TTL
+    const m = localMarks(), pub = Number(d && d.published_at) || 0;
+    for (const [k, x] of Object.entries(m)) if (!x || x.at < pub || Date.now() - x.at > LOCAL_TTL) delete m[k];
+    try { localStorage.setItem('afisha_local', JSON.stringify(m)); } catch (_) {}
     for (const e of events) {
       const x = m[e.key];
-      if (x && Date.now() - x.at < LOCAL_TTL) { if (x.plan) e.plan = x.plan; if (x.vote) e.vote = x.vote; }
+      if (x) { if (x.plan) e.plan = x.plan; if (x.vote) e.vote = x.vote; }
     }
   }
   S.data = { city_name: (d && d.city_name) || '', today, events };
@@ -327,7 +337,7 @@ async function act(e, path, body, apply, fallbackMsg) {
   const a = document.activeElement, fk = a && a.dataset && a.dataset.f;
   S.busy.add(e.key); render();
   try {
-    const r = DEMO ? await demoReply(path) : APP_KEY ? viaChat(path, body) : await api(path, body);
+    const r = DEMO ? await demoReply(path) : APP_KEY ? await viaChat(path, body) : await api(path, body);
     const cur = S.data.events.find(x => x.key === e.key) || e;
     apply(cur, r);
     toast(r.message || fallbackMsg);
@@ -450,12 +460,16 @@ const CATS = [
   ['🎭', 'импро и театр', /импро|импров|театр|плейб|клоун|спектак|перформанс|этюд|стендап/i],
   ['🧘', 'медитации', /медитац|випассан|чаш/i],
   ['🧖', 'бани', /бан[яиюе]|банн|парен/i],
-  ['🍵', 'чайные', /чайн|какао/i],
-  ['🌀', 'телесное', /телесн|чувствен|даос|шибари|оргазм|сенс/i],
-  ['🎉', 'вечеринки', /вечеринк|night|ночь|party|пати/i],
+  ['🍵', 'чайные', /(^|[^а-яёa-z])(чайн|чаепит)|какао/i],
+  ['🌀', 'телесное', /телесн|чувствен|даос|шибари|оргазм|(^|[^а-яёa-z])сенс(?!ор)/i],
+  ['🎉', 'вечеринки', /вечеринк|night|ночь|party|(^|[^а-яёa-z])пати/i],
   ['🎶', 'музыка и творчество', /концерт|квартирник|караоке|мантр|киртан|наброс/i],
   ['🎓', 'лекции', /лекци|выставк/i],
 ];
+function plural(n, one, few, many) {
+  const a = n % 10, b = n % 100;
+  return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many;
+}
 function weekEvents() {
   const { today, events } = S.data;
   const end = pd(today); end.setDate(end.getDate() + 6);
@@ -472,7 +486,7 @@ function summary() {
   const hasFit = list.some(e => Number(e.fit) > 0);
   let rec = null;
   if (hasFit) {
-    const pool = list.filter(e => e.plan !== 'going' && (Number(e.fit) || 0) >= 4)
+    const pool = list.filter(e => !e.plan && e.vote !== 'down' && (Number(e.fit) || 0) >= 4)
       .sort((a, b) => (b.fit - a.fit) || (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
     const first = pool[0], second = first && pool.find(e => e.date !== first.date);
     const pickBtn = e => h('button', { type: 'button', onclick: () => jump(e) }, `«${e.title}»`);
@@ -482,13 +496,13 @@ function summary() {
     const byDay = {};
     for (const e of list) byDay[e.date] = (byDay[e.date] || 0) + 1;
     const top = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
-    rec = h('div', { class: 'rec' }, `Самый насыщенный день — ${dayLabel(top[0])}: ${top[1]} событий.`);
+    rec = h('div', { class: 'rec' }, `Самый насыщенный день — ${dayLabel(top[0])}: ${top[1]} ${plural(top[1], 'событие', 'события', 'событий')}.`);
   }
   const d1 = pd(from), d2 = pd(to);
   const range = d1.getMonth() === d2.getMonth() ? `${d1.getDate()}–${d2.getDate()} ${MG[d2.getMonth()]}`
     : `${d1.getDate()} ${MG[d1.getMonth()]} – ${d2.getDate()} ${MG[d2.getMonth()]}`;
   return h('section', { class: 'sum' },
-    h('h2', null, `На неделе, ${range}: ${list.length} событий`),
+    h('h2', null, `На неделе, ${range}: ${list.length} ${plural(list.length, 'событие', 'события', 'событий')}`),
     tiles.length ? h('div', { class: 'tiles' }, tiles.map(([ic, name, n]) => h('span', { class: 'tile' }, h('b', null, n), `${ic} ${name}`))) : null,
     going.length ? h('div', { class: 'rec' }, 'Уже идёшь: ', going.map((e, i) => [i ? ', ' : '', h('button', { type: 'button', onclick: () => jump(e) }, `«${e.title}»`)])) : null,
     rec);

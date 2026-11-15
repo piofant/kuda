@@ -6,6 +6,7 @@
 <meta name="color-scheme" content="light">
 <title>Афиша: экстатик, контакт, импро</title>
 <meta name="robots" content="noindex">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{--fg:#1d1d1f;--muted:#6e6e73;--line:#e6e6ea;--soft:#f4f4f6;--accent:#e8702a;--accent-soft:#fdf0e6;--accent-dark:#b9541a;--we:#fbf6f1;--ok:#1d7f55;--ok-soft:#e5f3ec;--err:#b3261e}
 *{box-sizing:border-box}
@@ -67,6 +68,13 @@ main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;m
 .lock{max-width:340px;margin:56px auto;display:flex;flex-direction:column;gap:10px;text-align:center}
 .lock input{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:16px}
 .mine{margin-left:auto;font-size:13px;color:var(--muted);text-decoration:none}
+.sum{border-radius:14px;padding:12px 14px;margin:10px 0 4px;background:var(--accent-soft)}
+.sum h2{margin:0 0 8px;font-size:15px}
+.tiles{display:flex;flex-wrap:wrap;gap:6px}
+.tile{background:#fff;border-radius:10px;padding:4px 10px;font-size:13px;color:var(--muted)}
+.tile b{font-size:17px;color:var(--fg);margin-right:3px}
+.rec{margin-top:10px;font-size:15px;line-height:1.45}
+.rec button{border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--accent-dark);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .state .btn{margin-top:12px}
 .note{color:var(--muted);font-size:14px;padding:6px 4px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;transition:opacity .2s,transform .2s;background:var(--fg);color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;width:max-content;max-width:calc(100% - 32px);z-index:10;pointer-events:none}
@@ -128,6 +136,20 @@ const EMPTY = {
 };
 const S = { data: null, error: '', tab: 'cal', sel: null, filter: 'all', busy: new Set(), open: new Set(), pw: '', locked: false };
 try { S.pw = localStorage.getItem('afisha_pw') || ''; } catch (_) {}
+// мини-приложение в боте: ссылка с #k=<ключ> — личная версия (me.enc.json), действия уходят сообщением в чат с ботом
+const HASH = new URLSearchParams(location.hash.slice(1));
+const APP_KEY = PUBLIC ? HASH.get('k') : null;
+const BOT = document.documentElement.dataset.bot || 'puppa_luppa_bot';
+const CAN_ACT = !PUBLIC || !!APP_KEY;
+if (APP_KEY) document.querySelectorAll('.mine').forEach(a => a.remove());
+// мини-приложение читает данные, выложенные раз в час: свои нажатия держим поверх них 3 часа
+const LOCAL_TTL = 3 * 3600e3;
+function localMarks() { try { return JSON.parse(localStorage.getItem('afisha_local') || '{}'); } catch (_) { return {}; } }
+function markLocal(key, field, value) {
+  const m = localMarks();
+  m[key] = Object.assign(m[key] || {}, { [field]: value, at: Date.now() });
+  try { localStorage.setItem('afisha_local', JSON.stringify(m)); } catch (_) {}
+}
 const $main = document.getElementById('main');
 const mqWide = matchMedia('(min-width: 700px)');  // titles inside day cells
 const mqSide = matchMedia('(min-width: 1000px)'); // day list in a side panel
@@ -207,9 +229,11 @@ async function api(path, body) {
 
 async function pubState() {
   let r;
-  try { r = await fetch(LOCKED ? 'events.enc.json' : 'events.json', { cache: 'no-store' }); } catch (_) { throw new Error('Нет связи, попробуй ещё раз'); }
+  const file = APP_KEY ? 'me.enc.json' : LOCKED ? 'events.enc.json' : 'events.json';
+  try { r = await fetch(file, { cache: 'no-store' }); } catch (_) { throw new Error('Нет связи, попробуй ещё раз'); }
   if (!r.ok) throw new Error('Не получилось загрузить афишу');
   const j = await r.json();
+  if (APP_KEY) return decryptKey(j, APP_KEY);
   return LOCKED ? decrypt(j, S.pw) : j;
 }
 
@@ -226,6 +250,23 @@ async function decrypt(box, pw) {
   } catch (_) {
     throw new Error('LOCKED');
   }
+}
+async function decryptKey(box, k) {
+  try {
+    const raw = b64(k.replace(/-/g, '+').replace(/_/g, '/'));
+    const key = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(box.iv) }, key, b64(box.ct));
+    return JSON.parse(new TextDecoder().decode(plain));
+  } catch (_) {
+    throw new Error('Ссылка устарела — открой афишу заново из бота');
+  }
+}
+function viaChat(path, body) {  // «Иду», «Пас», оценки из мини-приложения — командой боту
+  const cmd = path === 'api/vote' ? body.vote : path.slice(4);
+  if (path === 'api/vote') markLocal(body.key, 'vote', body.vote);
+  else markLocal(body.key, 'plan', path === 'api/go' ? 'going' : 'skipped');
+  openUrl(`https://t.me/${BOT}?start=${cmd}_${body.key}`);
+  return { message: 'Отправила в чат с пупой' };
 }
 function lockForm(wrong) {
   const inp = h('input', { type: 'password', placeholder: 'Пароль', autocomplete: 'current-password', 'aria-label': 'Пароль' });
@@ -264,6 +305,13 @@ function setData(d) {
   const events = (Array.isArray(d && d.events) ? d.events : [])
     .filter(e => e && e.key && isDate(e.date))
     .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+  if (APP_KEY) {
+    const m = localMarks();
+    for (const e of events) {
+      const x = m[e.key];
+      if (x && Date.now() - x.at < LOCAL_TTL) { if (x.plan) e.plan = x.plan; if (x.vote) e.vote = x.vote; }
+    }
+  }
   S.data = { city_name: (d && d.city_name) || '', today, events };
   if (!S.sel || !isDate(S.sel) || S.sel.slice(0, 7) < today.slice(0, 7)) S.sel = defaultDay();
 }
@@ -279,7 +327,7 @@ async function act(e, path, body, apply, fallbackMsg) {
   const a = document.activeElement, fk = a && a.dataset && a.dataset.f;
   S.busy.add(e.key); render();
   try {
-    const r = DEMO ? await demoReply(path) : await api(path, body);
+    const r = DEMO ? await demoReply(path) : APP_KEY ? viaChat(path, body) : await api(path, body);
     const cur = S.data.events.find(x => x.key === e.key) || e;
     apply(cur, r);
     toast(r.message || fallbackMsg);
@@ -305,12 +353,12 @@ function card(e, inFeed) {
   const fit = Math.max(0, Math.min(5, Number(e.fit) || 0));
   const isNew = inFeed && ts(e.found) > 0 && Date.now() - ts(e.found) < 864e5;
   const acts = [];
-  if (!past && !PUBLIC) {
+  if (!past && CAN_ACT) {
     if (going) acts.push(h('span', { class: 'btn done' }, 'Иду ✓'),
       h('button', { class: 'btn', type: 'button', disabled: busy, 'data-f': 'skip:' + e.key, onclick: () => skip(e) }, 'Пас'));
     else acts.push(h('button', { class: 'btn pri', type: 'button', disabled: busy, 'data-f': 'go:' + e.key, onclick: () => go(e) }, '✅ Иду'));
   }
-  if (!PUBLIC) acts.push(
+  if (CAN_ACT) acts.push(
     h('button', { class: 'btn ic' + (e.vote === 'up' ? ' on' : ''), type: 'button', 'aria-label': 'Нравится',
       'aria-pressed': String(e.vote === 'up'), disabled: busy, 'data-f': 'up:' + e.key, onclick: () => vote(e, 'up') }, '👍'),
     h('button', { class: 'btn ic' + (e.vote === 'down' ? ' on' : ''), type: 'button', 'aria-label': 'Не моё',
@@ -391,13 +439,68 @@ function renderCal() {
   return side ? h('div', { class: 'calwrap' }, h('div', null, months), panel) : months;
 }
 
+// ---------- сводка недели ----------
+const CATS = [
+  ['💆', 'массажки', /массаж/i],
+  ['💋', 'поцелуйки', /поцел|kiss/i],
+  ['🫂', 'обнимашки', /обни|каддл|кадл|cuddle|тактил/i],
+  ['🔥', 'тантра', /тантр/i],
+  ['💃', 'экстатик', /экстат|ecstatic/i],
+  ['🤸', 'контактная импра', /контактн|(^|[^а-яёa-z])ки([^а-яёa-z]|$)/i],
+  ['🎭', 'импро и театр', /импро|импров|театр|плейб|клоун|спектак|перформанс|этюд|стендап/i],
+  ['🧘', 'медитации', /медитац|випассан|чаш/i],
+  ['🧖', 'бани', /бан[яиюе]|банн|парен/i],
+  ['🍵', 'чайные', /чайн|какао/i],
+  ['🌀', 'телесное', /телесн|чувствен|даос|шибари|оргазм|сенс/i],
+  ['🎉', 'вечеринки', /вечеринк|night|ночь|party|пати/i],
+  ['🎶', 'музыка и творчество', /концерт|квартирник|караоке|мантр|киртан|наброс/i],
+  ['🎓', 'лекции', /лекци|выставк/i],
+];
+function weekEvents() {
+  const { today, events } = S.data;
+  const end = pd(today); end.setDate(end.getDate() + 6);
+  return { from: today, to: iso(end), list: events.filter(e => e.date >= today && e.date <= iso(end)) };
+}
+function jump(e) { S.tab = 'cal'; S.sel = e.date; render(); const el = $main.querySelector('.dh'); if (el) el.scrollIntoView({ block: 'start' }); }
+function when(e) { return dayLabel(e.date) + (e.time ? `, ${e.time}` : ''); }
+function summary() {
+  const { from, to, list } = weekEvents();
+  if (!list.length) return null;
+  const tiles = CATS.map(([ic, name, re]) => [ic, name, list.filter(e => re.test(e.title || '')).length])
+    .filter(t => t[2]).sort((a, b) => b[2] - a[2]);
+  const going = list.filter(e => e.plan === 'going');
+  const hasFit = list.some(e => Number(e.fit) > 0);
+  let rec = null;
+  if (hasFit) {
+    const pool = list.filter(e => e.plan !== 'going' && (Number(e.fit) || 0) >= 4)
+      .sort((a, b) => (b.fit - a.fit) || (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+    const first = pool[0], second = first && pool.find(e => e.date !== first.date);
+    const pickBtn = e => h('button', { type: 'button', onclick: () => jump(e) }, `«${e.title}»`);
+    if (first) rec = h('div', { class: 'rec' }, 'Го? Рекомендую ', pickBtn(first), ` (${when(first)})`,
+      second ? [' + ', pickBtn(second), ` (${when(second)})`] : null, '.');
+  } else {
+    const byDay = {};
+    for (const e of list) byDay[e.date] = (byDay[e.date] || 0) + 1;
+    const top = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
+    rec = h('div', { class: 'rec' }, `Самый насыщенный день — ${dayLabel(top[0])}: ${top[1]} событий.`);
+  }
+  const d1 = pd(from), d2 = pd(to);
+  const range = d1.getMonth() === d2.getMonth() ? `${d1.getDate()}–${d2.getDate()} ${MG[d2.getMonth()]}`
+    : `${d1.getDate()} ${MG[d1.getMonth()]} – ${d2.getDate()} ${MG[d2.getMonth()]}`;
+  return h('section', { class: 'sum' },
+    h('h2', null, `На неделе, ${range}: ${list.length} событий`),
+    tiles.length ? h('div', { class: 'tiles' }, tiles.map(([ic, name, n]) => h('span', { class: 'tile' }, h('b', null, n), `${ic} ${name}`))) : null,
+    going.length ? h('div', { class: 'rec' }, 'Уже идёшь: ', going.map((e, i) => [i ? ', ' : '', h('button', { type: 'button', onclick: () => jump(e) }, `«${e.title}»`)])) : null,
+    rec);
+}
+
 function renderFeed() {
   const { today, events } = S.data;
   let list = events.filter(e => e.date >= today);
   if (S.filter === 'fit') list = list.filter(e => (Number(e.fit) || 0) >= 4);
   if (S.filter === 'going') list = list.filter(e => e.plan === 'going');
   list = list.slice().sort((a, b) => ts(b.found) - ts(a.found));
-  const chips = PUBLIC ? null : h('div', { class: 'chips' }, FILTERS.map(([k, t]) =>
+  const chips = !CAN_ACT ? null : h('div', { class: 'chips' }, FILTERS.map(([k, t]) =>
     h('button', { class: 'chip' + (S.filter === k ? ' on' : ''), type: 'button', 'aria-pressed': String(S.filter === k), 'data-f': 'chip:' + k,
       onclick: () => { S.filter = k; render(); } }, t)));
   return [chips, list.length ? list.map(e => card(e, true)) : h('div', { class: 'state' }, EMPTY[S.filter])];
@@ -412,7 +515,7 @@ function render(focusKey) {
     kids = S.error
       ? h('div', { class: 'state' }, h('div', null, S.error), h('button', { class: 'btn pri', type: 'button', onclick: () => load() }, 'Повторить'))
       : h('div', { class: 'state' }, 'Загружаю…');
-  } else kids = S.tab === 'cal' ? renderCal() : h('div', { class: 'feed' }, renderFeed());
+  } else kids = [summary(), S.tab === 'cal' ? renderCal() : h('div', { class: 'feed' }, renderFeed())];
   const a = document.activeElement, fk = focusKey || (a && a.dataset && a.dataset.f); // keep keyboard focus across re-renders
   $main.replaceChildren(...[kids].flat(Infinity));
   if (fk) { const el = $main.querySelector(`[data-f="${CSS.escape(fk)}"]`); if (el) el.focus({ preventScroll: true }); }

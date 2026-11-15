@@ -60,6 +60,13 @@ main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;m
 .fit i{width:6px;height:6px;border-radius:50%;background:var(--line)}
 .fit i.on{background:var(--accent)}
 .details{font-size:14px;margin-top:8px;padding:10px 12px;background:var(--soft);border-radius:10px;white-space:pre-line;word-break:break-word}
+.pv{display:block;max-width:100%;height:auto;border-radius:10px;background:#fff}
+.pv + div{margin-top:8px}
+.ints{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.ints::-webkit-scrollbar{display:none}
+.int{flex:none;min-height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line);background:#fff;white-space:nowrap;font-size:13px}
+.int.on{background:var(--lime);border-color:#a9d40f;color:var(--lime-ink);font-weight:600}
+.int-hint{font-size:13px;color:var(--muted);padding:2px 4px 0}
 .link{border:0;background:none;padding:0;min-height:40px;color:var(--accent-dark);font-size:14px;font-weight:600}
 .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .badges:empty{display:none}
@@ -111,7 +118,8 @@ main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;m
   .ev.go{background:var(--accent);color:#fff}
   .day.past .ev{opacity:.55}
   .more{display:block;font-size:12px;color:var(--muted);padding-left:6px}
-  .btn:hover,.chip:hover{border-color:#cfcfd5}
+  .btn:hover,.chip:hover,.int:hover:not(.on){border-color:#cfcfd5}
+  .ints{flex-wrap:wrap;overflow:visible}
   .btn.pri:hover{background:var(--accent-dark)}
   .feed{max-width:760px;margin:0 auto}
 }
@@ -152,7 +160,7 @@ const EMPTY = {
   fit: 'Пока нет того, что точно твоё',
   going: 'Планов пока нет. Нажми «Иду» на том, что нравится'
 };
-const S = { data: null, error: '', tab: 'cal', sel: null, filter: 'all', busy: new Set(), open: new Set(), pw: '', locked: false, cat: null };
+const S = { data: null, error: '', tab: 'cal', sel: null, filter: 'all', busy: new Set(), open: new Set(), badImg: new Set(), pw: '', locked: false, cat: null };
 try { S.pw = localStorage.getItem('afisha_pw') || ''; } catch (_) {}
 // мини-приложение в боте: ссылка с #k=<ключ> — личная версия (me.enc.json), действия уходят сообщением в чат с ботом
 const HASH = new URLSearchParams(location.hash.slice(1));
@@ -160,6 +168,41 @@ const APP_KEY = PUBLIC ? HASH.get('k') : null;
 const BOT = document.documentElement.dataset.bot || 'puppa_luppa_bot';
 const CAN_ACT = !PUBLIC || !!APP_KEY;
 if (APP_KEY) document.querySelectorAll('.mine').forEach(a => a.remove());
+// открытое мини-приложение «Пупа» (piofant.github.io/pupa): events.json без шифра, интересы из #i=…&c=…, без действий
+const PUPA = PUBLIC && !LOCKED && !APP_KEY;
+const PUPA_EMPTY = 'В моих адресах на эти дни тихо. Загляну ещё — новые анонсы появляются каждый день.';
+// запасной список, если в данных события с cats, а самого списка категорий нет
+const DEFAULT_CATS = [
+  { id: 'body', emoji: '🫂', title: 'Телесное и тактильное' },
+  { id: 'dance', emoji: '💃', title: 'Танец' },
+  { id: 'theatre', emoji: '🎭', title: 'Театр и импро' },
+  { id: 'music', emoji: '🎶', title: 'Музыка' },
+  { id: 'craft', emoji: '🎨', title: 'Творчество' },
+  { id: 'calm', emoji: '🧘', title: 'Тишина и медитации' },
+  { id: 'circles', emoji: '🗣', title: 'Круги и встречи' },
+  { id: 'tantra', emoji: '🔥', title: 'Тантра и чувственность', adult: true }
+];
+const catId = s => typeof s === 'string' && /^[a-z0-9_-]{1,32}$/.test(s);
+S.interests = new Set();
+if (PUPA) {
+  const hi = HASH.get('i');
+  if (hi != null) { S.interests = new Set(hi.split(',').map(s => s.trim()).filter(catId)); saveInterests(); }
+  else try { const a = JSON.parse(localStorage.getItem('pupa_interests') || '[]'); if (Array.isArray(a)) S.interests = new Set(a.filter(catId)); } catch (_) {}
+  const hc = HASH.get('c');
+  if (hc && catId(hc)) { S.city = hc; try { sessionStorage.setItem('pupa_city', hc); } catch (_) {} }
+}
+function saveInterests() { try { localStorage.setItem('pupa_interests', JSON.stringify([...S.interests])); } catch (_) {} }
+function isAdultCat(id) {
+  const c = (S.catsMeta || DEFAULT_CATS).find(x => x.id === id);
+  return c && c.adult != null ? !!c.adult : id === 'tantra';
+}
+// событие видно, если хоть одна его категория выбрана (ничего не выбрано — всё, кроме 18+); 18+ — только если выбрано явно
+function interestOk(e) {
+  const cats = Array.isArray(e.cats) ? e.cats : [];
+  if (!cats.length) return true;  // старые данные без категорий
+  if (cats.some(c => isAdultCat(c) && !S.interests.has(c))) return false;
+  return !S.interests.size || cats.some(c => S.interests.has(c));
+}
 // мини-приложение читает данные, выложенные раз в час: свои нажатия держим поверх них 3 часа
 const LOCAL_TTL = 3 * 3600e3;
 function localMarks() { try { return JSON.parse(localStorage.getItem('afisha_local') || '{}'); } catch (_) { return {}; } }
@@ -347,7 +390,9 @@ function setData(d) {
       if (x) { if (x.plan) e.plan = x.plan; if (x.vote) e.vote = x.vote; }
     }
   }
-  S.data = { city_name: cur.name || '', today, events, sources: Array.isArray(cur.sources) ? cur.sources : null };
+  S.catsMeta = (d && Array.isArray(d.cats) && d.cats.length ? d.cats : DEFAULT_CATS).filter(c => c && catId(c.id));
+  S.data = { city_name: cur.name || '', today, events: PUPA ? events.filter(interestOk) : events, cats: S.catsMeta,
+    sources: Array.isArray(cur.sources) ? cur.sources : null };
   if (!S.sel || !isDate(S.sel) || S.sel.slice(0, 7) < today.slice(0, 7)) S.sel = defaultDay();
 }
 function defaultDay() {
@@ -387,6 +432,8 @@ function card(e, inFeed) {
   const going = e.plan === 'going';
   const fit = Math.max(0, Math.min(5, Number(e.fit) || 0));
   const isNew = inFeed && ts(e.found) > 0 && Date.now() - ts(e.found) < 864e5;
+  const img = typeof e.image === 'string' && /^https:\/\/\S+$/i.test(e.image) && !S.badImg.has(e.image) ? e.image : null;
+  const more = !!(e.details || img), open = more && S.open.has(e.key);
   const acts = [];
   if (!past && CAN_ACT) {
     if (going) acts.push(h('span', { class: 'btn done' }, 'Иду ✓'),
@@ -409,9 +456,13 @@ function card(e, inFeed) {
     e.place ? h('div', { class: 'sub' }, e.place) : null,
     e.price ? h('div', { class: 'sub' }, e.price) : null,
     e.why ? h('div', { class: 'why' }, e.why) : null,
-    e.details && S.open.has(e.key) ? h('div', { class: 'details' }, e.details) : null,
-    e.details ? h('button', { class: 'link', type: 'button', 'aria-expanded': String(S.open.has(e.key)), 'data-f': 'more:' + e.key,
-      onclick: () => { S.open.has(e.key) ? S.open.delete(e.key) : S.open.add(e.key); render(); } }, S.open.has(e.key) ? 'Свернуть' : 'Подробнее') : null,
+    more && open ? h('div', { class: 'details' },
+      img ? h('img', { class: 'pv', loading: 'lazy', referrerpolicy: 'no-referrer', alt: '', onerror: ev => {  // битую картинку прячем и больше не грузим
+        S.badImg.add(img); const box = ev.target.parentNode; ev.target.remove(); if (box && !box.childNodes.length) box.remove();
+      }, src: img }) : null,
+      e.details ? h('div', null, e.details) : null) : null,
+    more ? h('button', { class: 'link', type: 'button', 'aria-expanded': String(open), 'data-f': 'more:' + e.key,
+      onclick: () => { S.open.has(e.key) ? S.open.delete(e.key) : S.open.add(e.key); render(); } }, open ? 'Свернуть' : 'Подробнее') : null,
     h('div', { class: 'badges' },
       isNew ? h('span', { class: 'badge new' }, 'новое') : null,
       going ? h('span', { class: 'badge go' }, '✓ Иду') : null,
@@ -463,7 +514,7 @@ function renderCal() {
   const panel = h('section', { class: side ? 'side' : null }, h('h3', { class: 'dh' }, dayLabel(S.sel)),
     evs.length ? evs.map(e => card(e, false)) : h('p', { class: 'note' }, 'В этот день ничего не нашла'));
   const months = [];
-  if (!events.length) months.push(h('p', { class: 'note' }, 'Пока ничего не нашла — загляни попозже'));
+  if (!events.length) months.push(h('p', { class: 'note' }, PUPA ? PUPA_EMPTY : 'Пока ничего не нашла — загляни попозже'));
   const last = pd(calRange()[1]);
   let y = pd(today).getFullYear(), m = pd(today).getMonth();
   while (y < last.getFullYear() || (y === last.getFullYear() && m <= last.getMonth())) {
@@ -500,6 +551,13 @@ function weekEvents() {
   const end = pd(today); end.setDate(end.getDate() + 6);
   return { from: today, to: iso(end), list: events.filter(e => e.date >= today && e.date <= iso(end)) };
 }
+// категории сводки: по полю cats у событий (список из данных), а для старых данных — по словам в названии
+function catDefs() {
+  if (S.data.events.some(e => Array.isArray(e.cats) && e.cats.length))
+    return S.data.cats.map(c => ({ key: c.id, ic: c.emoji || '', name: c.title || c.id,
+      test: e => Array.isArray(e.cats) && e.cats.includes(c.id) }));
+  return CATS.map(([ic, name, re]) => ({ key: name, ic, name, test: e => re.test(e.title || '') }));
+}
 function pickCat(name) {  // плитка сводки → список этой недели по категории; второй клик — сброс
   S.cat = S.cat === name ? null : name;
   S.tab = S.cat ? 'feed' : S.tab;
@@ -512,7 +570,7 @@ function when(e) { return dayLabel(e.date) + (e.time ? `, ${e.time}` : ''); }
 function summary() {
   const { from, to, list } = weekEvents();
   if (!list.length) return null;
-  const tiles = CATS.map(([ic, name, re]) => [ic, name, list.filter(e => re.test(e.title || '')).length])
+  const tiles = catDefs().map(c => [c.ic, c.name, list.filter(c.test).length, c.key])
     .filter(t => t[2]).sort((a, b) => b[2] - a[2]);
   const going = list.filter(e => e.plan === 'going');
   const hasFit = list.some(e => Number(e.fit) > 0);
@@ -524,6 +582,14 @@ function summary() {
     const pickBtn = e => h('button', { type: 'button', onclick: () => jump(e) }, `«${e.title}»`);
     if (first) rec = h('div', { class: 'rec' }, 'Го? Рекомендую ', pickBtn(first), ` (${when(first)})`,
       second ? [' + ', pickBtn(second), ` (${when(second)})`] : null, '.');
+  } else if (PUPA) {  // ближайшие не сегодня, с разными датами; сначала те, где указано время
+    const later = list.filter(e => e.date > S.data.today);
+    const picks = [];
+    for (const pass of [e => !!e.time, () => true])
+      for (const e of later) if (picks.length < 2 && pass(e) && !picks.some(p => p.date === e.date)) picks.push(e);
+    picks.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+    const pickBtn = e => h('button', { type: 'button', onclick: () => jump(e) }, `«${e.title}»`);
+    if (picks.length) rec = h('div', { class: 'rec' }, 'Пупа советует ', picks.map((e, i) => [i ? ' и ' : '', pickBtn(e), ` (${when(e)})`]), '.');
   } else {
     const byDay = {};
     for (const e of list) byDay[e.date] = (byDay[e.date] || 0) + 1;
@@ -535,11 +601,28 @@ function summary() {
     : `${d1.getDate()} ${MG[d1.getMonth()]} – ${d2.getDate()} ${MG[d2.getMonth()]}`;
   return h('section', { class: 'sum' },
     h('h2', null, `На неделе, ${range}: ${list.length} ${plural(list.length, 'событие', 'события', 'событий')}`),
-    tiles.length ? h('div', { class: 'tiles' }, tiles.map(([ic, name, n]) =>
-      h('button', { class: 'tile' + (S.cat === name ? ' on' : ''), type: 'button', 'aria-pressed': String(S.cat === name),
-        'data-f': 'cat:' + name, onclick: () => pickCat(name) }, h('b', null, n), `${ic} ${name}`))) : null,
+    tiles.length ? h('div', { class: 'tiles' }, tiles.map(([ic, name, n, key]) =>
+      h('button', { class: 'tile' + (S.cat === key ? ' on' : ''), type: 'button', 'aria-pressed': String(S.cat === key),
+        'data-f': 'cat:' + key, onclick: () => pickCat(key) }, h('b', null, n), `${ic} ${name}`))) : null,
     going.length ? h('div', { class: 'rec' }, 'Уже идёшь: ', going.map((e, i) => [i ? ', ' : '', h('button', { type: 'button', onclick: () => jump(e) }, `«${e.title}»`)])) : null,
     rec);
+}
+
+// ---------- интересы (открытое мини-приложение) ----------
+function toggleInterest(c) {
+  const on = S.interests.has(c.id);
+  const apply = () => {
+    if (on) S.interests.delete(c.id); else S.interests.add(c.id);
+    saveInterests(); setData(S.raw); render('int:' + c.id);
+  };
+  if (!on && isAdultCat(c.id)) askConfirm('Это события 18+. Тебе есть 18?', apply); else apply();
+}
+function interestBar() {
+  return [h('div', { class: 'ints', role: 'group', 'aria-label': 'Интересы' }, S.data.cats.map(c => {
+    const on = S.interests.has(c.id);
+    return h('button', { class: 'int' + (on ? ' on' : ''), type: 'button', 'aria-pressed': String(on), title: c.hint || null,
+      'data-f': 'int:' + c.id, onclick: () => toggleInterest(c) }, `${c.emoji || ''} ${c.title || c.id}`.trim());
+  })), h('div', { class: 'int-hint' }, 'Отметь, что откликается, — покажу только это.')];
 }
 
 function switchCity(code) {
@@ -559,7 +642,9 @@ function renderSources() {
   const list = S.data.sources;
   if (!list || !list.length) return h('div', { class: 'state' }, 'Список источников появится после ближайшего сбора');
   const found = list.filter(x => x.events).length;
-  return [h('p', { class: 'note' }, `${list.length} ${plural(list.length, 'источник', 'источника', 'источников')}, `
+  return [h('p', { class: 'note' },
+    (PUPA ? 'Адреса, которые мне посоветовали свои: мастера, пространства, сообщества. Не вся афиша подряд — только проверенное. ' : '')
+    + `${list.length} ${plural(list.length, 'источник', 'источника', 'источников')}, `
     + `из ${found} сейчас есть события в календаре.`
     + (PUBLIC ? '' : ' «Папка» — каналы в папке, «без подписки» — читаю по имени, «чат» — беру только длинные сообщения-анонсы.')),
     list.map(x => h('div', { class: 'src' + (x.error ? ' err' : '') },
@@ -567,17 +652,17 @@ function renderSources() {
         x.username ? h('a', { href: `https://t.me/${x.username}`, onclick: ev => { ev.preventDefault(); openUrl(`https://t.me/${x.username}`); } }, x.title)
           : x.kind === 'timepad' ? h('a', { href: 'https://afisha.timepad.ru', onclick: ev => { ev.preventDefault(); openUrl('https://afisha.timepad.ru'); } }, x.title)
           : h('span', null, x.title),
-        h('span', { class: 'k' }, KINDS[x.kind] || x.kind || ''),
+        PUPA && (x.kind === 'folder' || x.kind === 'extra') ? null : h('span', { class: 'k' }, KINDS[x.kind] || x.kind || ''),
         h('div', { class: 'sub' }, x.error ? 'в прошлый раз не прочиталось' : ago(x.last_post))),
       h('div', { class: 'n' }, h('b', null, x.events || 0), h('br'), plural(x.events || 0, 'событие', 'события', 'событий'))))];
 }
 
 function renderFeed() {
   const { today, events } = S.data;
-  const cat = S.cat && CATS.find(c => c[1] === S.cat);
+  const cat = S.cat && catDefs().find(c => c.key === S.cat);
   if (cat) {
-    const list = weekEvents().list.filter(e => cat[2].test(e.title || ''));
-    return [h('div', { class: 'catbar' }, `${cat[0]} ${cat[1]} на неделе: ${list.length}`,
+    const list = weekEvents().list.filter(cat.test);
+    return [h('div', { class: 'catbar' }, `${cat.ic} ${cat.name} на неделе: ${list.length}`,
       h('button', { class: 'btn', type: 'button', onclick: () => { S.cat = null; render(); } }, 'Показать всё')),
       list.length ? list.map(e => card(e, false)) : h('div', { class: 'state' }, 'На этой неделе такого нет')];
   }
@@ -588,7 +673,7 @@ function renderFeed() {
   const chips = !CAN_ACT ? null : h('div', { class: 'chips' }, FILTERS.map(([k, t]) =>
     h('button', { class: 'chip' + (S.filter === k ? ' on' : ''), type: 'button', 'aria-pressed': String(S.filter === k), 'data-f': 'chip:' + k,
       onclick: () => { S.filter = k; render(); } }, t)));
-  return [chips, list.length ? list.map(e => card(e, true)) : h('div', { class: 'state' }, EMPTY[S.filter])];
+  return [chips, list.length ? list.map(e => card(e, true)) : h('div', { class: 'state' }, PUPA ? PUPA_EMPTY : EMPTY[S.filter])];
 }
 
 function render(focusKey) {
@@ -606,7 +691,7 @@ function render(focusKey) {
       ? h('div', { class: 'state' }, h('div', null, S.error), h('button', { class: 'btn pri', type: 'button', onclick: () => load() }, 'Повторить'))
       : h('div', { class: 'state' }, 'Загружаю…');
   } else kids = S.tab === 'src' ? h('div', { class: 'feed' }, renderSources())
-    : [summary(), S.tab === 'cal' ? renderCal() : h('div', { class: 'feed' }, renderFeed())];
+    : [PUPA ? interestBar() : null, summary(), S.tab === 'cal' ? renderCal() : h('div', { class: 'feed' }, renderFeed())];
   const a = document.activeElement, fk = focusKey || (a && a.dataset && a.dataset.f); // keep keyboard focus across re-renders
   $main.replaceChildren(...[kids].flat(Infinity).filter(x => x != null && x !== false));
   if (fk) { const el = $main.querySelector(`[data-f="${CSS.escape(fk)}"]`); if (el) el.focus({ preventScroll: true }); }

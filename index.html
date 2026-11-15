@@ -9,13 +9,24 @@
 <meta name="referrer" content="no-referrer">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-:root{--fg:#1d1d1f;--muted:#6e6e73;--line:#e6e6ea;--soft:#f4f4f6;--accent:#e8702a;--accent-soft:#fdf0e6;--accent-dark:#b9541a;--we:#fbf6f1;--ok:#1d7f55;--ok-soft:#e5f3ec;--err:#b3261e}
+:root{--fg:#1b1d16;--muted:#6b6f63;--line:#e4e8da;--soft:#f4f6ef;--accent:#e4007c;--accent-soft:#fde4f2;--accent-dark:#a3005a;--lime:#c5f02a;--lime-soft:#f1fbcf;--lime-ink:#3a4d00;--cyan:#16b9cc;--cyan-soft:#e0f7fa;--we:#f7fbe9;--ok:#1d7f55;--ok-soft:#e5f3ec;--err:#b3261e}
 *{box-sizing:border-box}
 html,body{margin:0;background:#fff;color:var(--fg);color-scheme:light}
 body{font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;margin:0}
 .top{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:10px 16px 0}
-.brand{display:flex;align-items:baseline;gap:8px;max-width:480px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:8px;max-width:480px;margin:0 auto}
+.ava{width:34px;height:34px;border-radius:50%;flex:none;box-shadow:0 0 0 2px var(--lime)}
+.cities{display:inline-flex;gap:2px;padding:2px;border-radius:999px;background:var(--soft)}
+.cities button{border:0;background:none;border-radius:999px;padding:3px 10px;font-size:13px;color:var(--muted);min-height:28px}
+.cities button.on{background:var(--lime);color:var(--lime-ink);font-weight:700}
+.src{display:flex;gap:10px;align-items:baseline;justify-content:space-between;border-bottom:1px solid var(--line);padding:10px 4px}
+.src a{color:var(--fg);font-weight:600;text-decoration:none}
+.src a:hover{color:var(--accent-dark)}
+.src .k{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--cyan-soft);color:#0b6b77;margin-left:6px;white-space:nowrap}
+.src .n{flex:none;text-align:right;font-size:13px;color:var(--muted)}
+.src .n b{font-size:16px;color:var(--fg)}
+.src.err a{color:var(--err)}
 .brand b{font-size:20px;letter-spacing:-.2px}
 .brand span{font-size:13px;color:var(--muted)}
 .tabs{display:flex;max-width:480px;margin:6px auto 0}
@@ -33,8 +44,8 @@ main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;m
 .day.past{color:#b5b5bb}
 .day.today{box-shadow:inset 0 0 0 1.5px var(--fg);font-weight:700}
 .day.sel{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent);font-weight:700}
-.mk{margin-top:4px;height:16px;min-width:16px;padding:0 4px;border-radius:8px;font-size:11px;line-height:16px;font-weight:700;color:var(--accent-dark);background:#fbe0cc;border:1px solid #f1b38a}
-.mk.dot{min-width:8px;width:8px;height:8px;padding:0;margin-top:8px;background:#f0a46f;border-color:#f0a46f}
+.mk{margin-top:4px;height:16px;min-width:16px;padding:0 4px;border-radius:8px;font-size:11px;line-height:16px;font-weight:700;color:var(--lime-ink);background:var(--lime);border:1px solid #a9d40f}
+.mk.dot{min-width:8px;width:8px;height:8px;padding:0;margin-top:8px;background:#a9d40f;border-color:#a9d40f}
 .mk.go{background:var(--accent);border-color:var(--accent);color:#fff}
 .day.past .mk{opacity:.55}
 .dh{font-size:17px;margin:16px 4px 4px}
@@ -54,7 +65,7 @@ main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;m
 .badges:empty{display:none}
 .badge{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--muted)}
 .badge.go{background:var(--ok-soft);color:var(--ok);font-weight:600}
-.badge.new{background:var(--accent);color:#fff;font-weight:600}
+.badge.new{background:var(--cyan);color:#fff;font-weight:600}
 .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:500}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
@@ -69,12 +80,12 @@ main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;m
 .lock{max-width:340px;margin:56px auto;display:flex;flex-direction:column;gap:10px;text-align:center}
 .lock input{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:16px}
 .mine{margin-left:auto;font-size:13px;color:var(--muted);text-decoration:none}
-.sum{border-radius:14px;padding:12px 14px;margin:10px 0 4px;background:var(--accent-soft)}
+.sum{border-radius:14px;padding:12px 14px;margin:10px 0 4px;background:var(--lime-soft);box-shadow:inset 0 0 0 1.5px #dcf38a}
 .sum h2{margin:0 0 8px;font-size:15px}
 .tiles{display:flex;flex-wrap:wrap;gap:6px}
 .tile{background:#fff;border:0;border-radius:10px;padding:4px 10px;min-height:34px;font-size:13px;color:var(--muted);cursor:pointer}
 .tile b{font-size:17px;color:var(--fg);margin-right:3px}
-.tile:hover{box-shadow:inset 0 0 0 1.5px #f1b38a}
+.tile:hover{box-shadow:inset 0 0 0 1.5px var(--lime)}
 .tile.on{background:var(--accent);color:#fff}
 .tile.on b{color:#fff}
 .catbar{display:flex;align-items:center;gap:8px;margin:12px 0 4px;font-weight:600;scroll-margin-top:110px}
@@ -94,9 +105,9 @@ main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;m
   main{max-width:1360px;padding:8px 24px 60px}
   .day,.blank{min-height:108px}
   .day{align-items:stretch;padding:6px;gap:3px;text-align:left;font-size:14px;overflow:hidden}
-  .day:hover:not(.sel):not(.today){box-shadow:inset 0 0 0 1px #d5d5db}
+  .day:hover:not(.sel):not(.today){box-shadow:inset 0 0 0 1px var(--lime)}
   .day .mk{display:none}
-  .ev{display:block;font-size:12px;line-height:17px;padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:#5c2d10;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;flex:none}
+  .ev{display:block;font-size:12px;line-height:17px;padding:1px 6px;border-radius:5px;background:var(--lime-soft);color:var(--lime-ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;flex:none}
   .ev.go{background:var(--accent);color:#fff}
   .day.past .ev{opacity:.55}
   .more{display:block;font-size:12px;color:var(--muted);padding-left:6px}
@@ -113,10 +124,11 @@ main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;m
 </head>
 <body>
 <header class="top">
-  <div class="brand"><b>афиша</b><span id="city"></span><a class="mine" href="https://piofant--8794.getbb.app/">полная версия</a></div>
+  <div class="brand"><img class="ava" src="pupa.jpg" alt=""><b>афиша</b><span id="city"></span><a class="mine" href="https://piofant--8794.getbb.app/">полная версия</a></div>
   <nav class="tabs">
     <button class="tab on" type="button" data-tab="cal">Календарь</button>
     <button class="tab" type="button" data-tab="feed">Лента</button>
+    <button class="tab" type="button" data-tab="src">Источники</button>
   </nav>
 </header>
 <main id="main"></main>
@@ -314,8 +326,16 @@ async function load(silent) {
 }
 
 function setData(d) {
+  S.raw = d;
   const today = isDate(d && d.today) ? d.today : iso(new Date());
-  const events = (Array.isArray(d && d.events) ? d.events : [])
+  // оба города (cities) — или старый формат с одним
+  const cities = (d && d.cities && typeof d.cities === 'object') ? d.cities
+    : { [(d && d.city) || 'spb']: { name: (d && d.city_name) || '', events: (d && d.events) || [] } };
+  if (!S.city) { try { S.city = sessionStorage.getItem('pupa_city') || ''; } catch (_) {} }  // на сессию: /city в боте главнее
+  if (!cities[S.city]) S.city = cities[d && d.city] ? d.city : Object.keys(cities)[0];
+  S.cities = Object.entries(cities).map(([code, c]) => [code, (c && c.name) || code]);
+  const cur = cities[S.city] || {};
+  const events = (Array.isArray(cur.events) ? cur.events : [])
     .filter(e => e && e.key && isDate(e.date))
     .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
   if (APP_KEY) {  // свои нажатия — поверх данных, пока их не выложили (published_at) и не дольше LOCAL_TTL
@@ -327,7 +347,7 @@ function setData(d) {
       if (x) { if (x.plan) e.plan = x.plan; if (x.vote) e.vote = x.vote; }
     }
   }
-  S.data = { city_name: (d && d.city_name) || '', today, events };
+  S.data = { city_name: cur.name || '', today, events, sources: Array.isArray(cur.sources) ? cur.sources : null };
   if (!S.sel || !isDate(S.sel) || S.sel.slice(0, 7) < today.slice(0, 7)) S.sel = defaultDay();
 }
 function defaultDay() {
@@ -522,6 +542,36 @@ function summary() {
     rec);
 }
 
+function switchCity(code) {
+  S.city = code; S.cat = null; S.sel = null;
+  try { sessionStorage.setItem('pupa_city', code); } catch (_) {}
+  setData(S.raw); render();
+}
+
+// ---------- единая база источников ----------
+const KINDS = { folder: 'папка', extra: 'без подписки', chat: 'чат', timepad: 'сайт' };
+function ago(s) {
+  const t = ts(s); if (!t) return 'постов пока не было';
+  const d = Math.floor((Date.now() - t) / 864e5);
+  return d <= 0 ? 'пост сегодня' : d === 1 ? 'пост вчера' : `пост ${d} ${plural(d, 'день', 'дня', 'дней')} назад`;
+}
+function renderSources() {
+  const list = S.data.sources;
+  if (!list || !list.length) return h('div', { class: 'state' }, 'Список источников появится после ближайшего сбора');
+  const found = list.filter(x => x.events).length;
+  return [h('p', { class: 'note' }, `${list.length} ${plural(list.length, 'источник', 'источника', 'источников')}, `
+    + `из ${found} сейчас есть события в календаре.`
+    + (PUBLIC ? '' : ' «Папка» — каналы в папке, «без подписки» — читаю по имени, «чат» — беру только длинные сообщения-анонсы.')),
+    list.map(x => h('div', { class: 'src' + (x.error ? ' err' : '') },
+      h('div', null,
+        x.username ? h('a', { href: `https://t.me/${x.username}`, onclick: ev => { ev.preventDefault(); openUrl(`https://t.me/${x.username}`); } }, x.title)
+          : x.kind === 'timepad' ? h('a', { href: 'https://afisha.timepad.ru', onclick: ev => { ev.preventDefault(); openUrl('https://afisha.timepad.ru'); } }, x.title)
+          : h('span', null, x.title),
+        h('span', { class: 'k' }, KINDS[x.kind] || x.kind || ''),
+        h('div', { class: 'sub' }, x.error ? 'в прошлый раз не прочиталось' : ago(x.last_post))),
+      h('div', { class: 'n' }, h('b', null, x.events || 0), h('br'), plural(x.events || 0, 'событие', 'события', 'событий'))))];
+}
+
 function renderFeed() {
   const { today, events } = S.data;
   const cat = S.cat && CATS.find(c => c[1] === S.cat);
@@ -542,7 +592,12 @@ function renderFeed() {
 }
 
 function render(focusKey) {
-  document.getElementById('city').textContent = (S.data && S.data.city_name) || '';
+  const $city = document.getElementById('city');
+  if (S.cities && S.cities.length > 1) {
+    $city.className = 'cities';
+    $city.replaceChildren(...S.cities.map(([code, name]) => h('button', { type: 'button', class: S.city === code ? 'on' : '',
+      'aria-pressed': String(S.city === code), onclick: () => switchCity(code) }, name)));
+  } else $city.textContent = (S.data && S.data.city_name) || '';
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
   let kids;
   if (S.locked) kids = lockForm(S.wrong);
@@ -550,9 +605,10 @@ function render(focusKey) {
     kids = S.error
       ? h('div', { class: 'state' }, h('div', null, S.error), h('button', { class: 'btn pri', type: 'button', onclick: () => load() }, 'Повторить'))
       : h('div', { class: 'state' }, 'Загружаю…');
-  } else kids = [summary(), S.tab === 'cal' ? renderCal() : h('div', { class: 'feed' }, renderFeed())];
+  } else kids = S.tab === 'src' ? h('div', { class: 'feed' }, renderSources())
+    : [summary(), S.tab === 'cal' ? renderCal() : h('div', { class: 'feed' }, renderFeed())];
   const a = document.activeElement, fk = focusKey || (a && a.dataset && a.dataset.f); // keep keyboard focus across re-renders
-  $main.replaceChildren(...[kids].flat(Infinity));
+  $main.replaceChildren(...[kids].flat(Infinity).filter(x => x != null && x !== false));
   if (fk) { const el = $main.querySelector(`[data-f="${CSS.escape(fk)}"]`); if (el) el.focus({ preventScroll: true }); }
 }
 

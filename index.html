@@ -72,8 +72,13 @@ main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;m
 .sum{border-radius:14px;padding:12px 14px;margin:10px 0 4px;background:var(--accent-soft)}
 .sum h2{margin:0 0 8px;font-size:15px}
 .tiles{display:flex;flex-wrap:wrap;gap:6px}
-.tile{background:#fff;border-radius:10px;padding:4px 10px;font-size:13px;color:var(--muted)}
+.tile{background:#fff;border:0;border-radius:10px;padding:4px 10px;min-height:34px;font-size:13px;color:var(--muted);cursor:pointer}
 .tile b{font-size:17px;color:var(--fg);margin-right:3px}
+.tile:hover{box-shadow:inset 0 0 0 1.5px #f1b38a}
+.tile.on{background:var(--accent);color:#fff}
+.tile.on b{color:#fff}
+.catbar{display:flex;align-items:center;gap:8px;margin:12px 0 4px;font-weight:600;scroll-margin-top:110px}
+.catbar button{margin-left:auto}
 .rec{margin-top:10px;font-size:15px;line-height:1.45}
 .rec button{display:inline;text-align:left;border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--accent-dark);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .state .btn{margin-top:12px}
@@ -135,7 +140,7 @@ const EMPTY = {
   fit: 'Пока нет того, что точно твоё',
   going: 'Планов пока нет. Нажми «Иду» на том, что нравится'
 };
-const S = { data: null, error: '', tab: 'cal', sel: null, filter: 'all', busy: new Set(), open: new Set(), pw: '', locked: false };
+const S = { data: null, error: '', tab: 'cal', sel: null, filter: 'all', busy: new Set(), open: new Set(), pw: '', locked: false, cat: null };
 try { S.pw = localStorage.getItem('afisha_pw') || ''; } catch (_) {}
 // мини-приложение в боте: ссылка с #k=<ключ> — личная версия (me.enc.json), действия уходят сообщением в чат с ботом
 const HASH = new URLSearchParams(location.hash.slice(1));
@@ -475,6 +480,13 @@ function weekEvents() {
   const end = pd(today); end.setDate(end.getDate() + 6);
   return { from: today, to: iso(end), list: events.filter(e => e.date >= today && e.date <= iso(end)) };
 }
+function pickCat(name) {  // плитка сводки → список этой недели по категории; второй клик — сброс
+  S.cat = S.cat === name ? null : name;
+  S.tab = S.cat ? 'feed' : S.tab;
+  render();
+  const el = $main.querySelector('.catbar') || $main.querySelector('.feed');
+  if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
 function jump(e) { S.tab = 'cal'; S.sel = e.date; render(); const el = $main.querySelector('.dh'); if (el) el.scrollIntoView({ block: 'start' }); }
 function when(e) { return dayLabel(e.date) + (e.time ? `, ${e.time}` : ''); }
 function summary() {
@@ -503,13 +515,22 @@ function summary() {
     : `${d1.getDate()} ${MG[d1.getMonth()]} – ${d2.getDate()} ${MG[d2.getMonth()]}`;
   return h('section', { class: 'sum' },
     h('h2', null, `На неделе, ${range}: ${list.length} ${plural(list.length, 'событие', 'события', 'событий')}`),
-    tiles.length ? h('div', { class: 'tiles' }, tiles.map(([ic, name, n]) => h('span', { class: 'tile' }, h('b', null, n), `${ic} ${name}`))) : null,
+    tiles.length ? h('div', { class: 'tiles' }, tiles.map(([ic, name, n]) =>
+      h('button', { class: 'tile' + (S.cat === name ? ' on' : ''), type: 'button', 'aria-pressed': String(S.cat === name),
+        'data-f': 'cat:' + name, onclick: () => pickCat(name) }, h('b', null, n), `${ic} ${name}`))) : null,
     going.length ? h('div', { class: 'rec' }, 'Уже идёшь: ', going.map((e, i) => [i ? ', ' : '', h('button', { type: 'button', onclick: () => jump(e) }, `«${e.title}»`)])) : null,
     rec);
 }
 
 function renderFeed() {
   const { today, events } = S.data;
+  const cat = S.cat && CATS.find(c => c[1] === S.cat);
+  if (cat) {
+    const list = weekEvents().list.filter(e => cat[2].test(e.title || ''));
+    return [h('div', { class: 'catbar' }, `${cat[0]} ${cat[1]} на неделе: ${list.length}`,
+      h('button', { class: 'btn', type: 'button', onclick: () => { S.cat = null; render(); } }, 'Показать всё')),
+      list.length ? list.map(e => card(e, false)) : h('div', { class: 'state' }, 'На этой неделе такого нет')];
+  }
   let list = events.filter(e => e.date >= today);
   if (S.filter === 'fit') list = list.filter(e => (Number(e.fit) || 0) >= 4);
   if (S.filter === 'going') list = list.filter(e => e.plan === 'going');
@@ -536,7 +557,7 @@ function render(focusKey) {
 }
 
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
-  S.tab = b.dataset.tab; render(); window.scrollTo(0, 0);
+  S.tab = b.dataset.tab; S.cat = null; render(); window.scrollTo(0, 0);
 }));
 document.addEventListener('keydown', ev => {
   if (S.tab !== 'cal' || !S.data || ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;

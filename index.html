@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="ru" data-public="1" data-locked="1" data-owner="https://piofant--8794.getbb.app/">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Афиша: экстатик, контакт, импро</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--fg:#1d1d1f;--muted:#6e6e73;--line:#e6e6ea;--soft:#f4f4f6;--accent:#e8702a;--accent-soft:#fdf0e6;--accent-dark:#b9541a;--we:#fbf6f1;--ok:#1d7f55;--ok-soft:#e5f3ec;--err:#b3261e}
+*{box-sizing:border-box}
+html,body{margin:0;background:#fff;color:var(--fg);color-scheme:light}
+body{font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;margin:0}
+.top{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:10px 16px 0}
+.brand{display:flex;align-items:baseline;gap:8px;max-width:480px;margin:0 auto}
+.brand b{font-size:20px;letter-spacing:-.2px}
+.brand span{font-size:13px;color:var(--muted)}
+.tabs{display:flex;max-width:480px;margin:6px auto 0}
+.tab{flex:1;min-height:44px;border:0;background:none;border-bottom:2px solid transparent;font-weight:600;color:var(--muted)}
+.tab.on{color:var(--fg);border-bottom-color:var(--accent)}
+main{padding:8px 12px calc(80px + env(safe-area-inset-bottom));max-width:480px;margin:0 auto}
+.month h2{font-size:16px;font-weight:700;margin:14px 4px 6px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.wd{font-size:12px;color:var(--muted);text-align:center;padding:2px 0 4px}
+.wd.we{color:var(--accent-dark)}
+.day,.blank{min-height:48px;border-radius:10px}
+.day{border:0;background:none;display:flex;flex-direction:column;align-items:center;padding:6px 0 0;font-size:15px}
+.we{background:var(--we)}
+.wd.we{background:none}
+.day.past{color:#b5b5bb}
+.day.today{box-shadow:inset 0 0 0 1.5px var(--fg);font-weight:700}
+.day.sel{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent);font-weight:700}
+.mk{margin-top:4px;height:16px;min-width:16px;padding:0 4px;border-radius:8px;font-size:11px;line-height:16px;font-weight:700;color:var(--accent-dark);background:#fbe0cc;border:1px solid #f1b38a}
+.mk.dot{min-width:8px;width:8px;height:8px;padding:0;margin-top:8px;background:#f0a46f;border-color:#f0a46f}
+.mk.go{background:var(--accent);border-color:var(--accent);color:#fff}
+.day.past .mk{opacity:.55}
+.dh{font-size:17px;margin:16px 4px 4px}
+.card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0;background:#fff}
+.card.past{opacity:.7}
+.ch{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.card h3{font-size:16px;margin:0 0 4px;line-height:1.3;word-break:break-word}
+.meta{font-size:14px}
+.sub{font-size:14px;color:var(--muted);word-break:break-word}
+.why{font-size:14px;color:var(--muted);margin-top:6px}
+.fit{display:inline-flex;gap:3px;padding-top:7px;flex:none}
+.fit i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.fit i.on{background:var(--accent)}
+.details{font-size:14px;margin-top:8px;padding:10px 12px;background:var(--soft);border-radius:10px;white-space:pre-line;word-break:break-word}
+.link{border:0;background:none;padding:0;min-height:40px;color:var(--accent-dark);font-size:14px;font-weight:600}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.badges:empty{display:none}
+.badge{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.badge.go{background:var(--ok-soft);color:var(--ok);font-weight:600}
+.badge.new{background:var(--accent);color:#fff;font-weight:600}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:500}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.done{background:var(--ok-soft);border-color:var(--ok-soft);color:var(--ok);font-weight:600}
+.btn.ic{min-width:44px;padding:0}
+.btn.on{background:var(--accent-soft);border-color:var(--accent)}
+.btn:disabled{opacity:.5}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:6px 0;scrollbar-width:none}
+.chip{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line);background:#fff;white-space:nowrap;font-size:14px}
+.chip.on{background:var(--fg);border-color:var(--fg);color:#fff}
+.state{text-align:center;color:var(--muted);padding:48px 16px}
+.lock{max-width:340px;margin:56px auto;display:flex;flex-direction:column;gap:10px;text-align:center}
+.lock input{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:16px}
+.mine{margin-left:auto;font-size:13px;color:var(--muted);text-decoration:none}
+.state .btn{margin-top:12px}
+.note{color:var(--muted);font-size:14px;padding:6px 4px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;transition:opacity .2s,transform .2s;background:var(--fg);color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;width:max-content;max-width:calc(100% - 32px);z-index:10;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:var(--err)}
+.ev,.more{display:none}
+@media (min-width:700px){
+  .top{padding:12px 24px 0}
+  .brand,.tabs{max-width:1312px}
+  .tab{flex:0 0 auto;padding:0 4px;margin-right:24px}
+  main{max-width:1360px;padding:8px 24px 60px}
+  .day,.blank{min-height:108px}
+  .day{align-items:stretch;padding:6px;gap:3px;text-align:left;font-size:14px;overflow:hidden}
+  .day:hover:not(.sel):not(.today){box-shadow:inset 0 0 0 1px #d5d5db}
+  .day .mk{display:none}
+  .ev{display:block;font-size:12px;line-height:17px;padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:#5c2d10;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;flex:none}
+  .ev.go{background:var(--accent);color:#fff}
+  .day.past .ev{opacity:.55}
+  .more{display:block;font-size:12px;color:var(--muted);padding-left:6px}
+  .btn:hover,.chip:hover{border-color:#cfcfd5}
+  .btn.pri:hover{background:var(--accent-dark)}
+  .feed{max-width:760px;margin:0 auto}
+}
+@media (min-width:1000px){
+  .calwrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
+  .side{position:sticky;top:112px;max-height:calc(100vh - 124px);overflow:auto;padding:0 4px 12px}
+}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><b>афиша</b><span id="city"></span><a class="mine" href="https://piofant--8794.getbb.app/">полная версия</a></div>
+  <nav class="tabs">
+    <button class="tab on" type="button" data-tab="cal">Календарь</button>
+    <button class="tab" type="button" data-tab="feed">Лента</button>
+  </nav>
+</header>
+<main id="main"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTg = !!(tg && tg.initData);
+const DEMO = new URLSearchParams(location.search).get('demo') === '1';
+// публичная копия (piofant.github.io/afisha): данные из events.json, без кнопок и личных отметок
+const PUBLIC = document.documentElement.dataset.public === '1';
+const LOCKED = PUBLIC && document.documentElement.dataset.locked === '1';  // events.enc.json + пароль
+const OWNER_URL = document.documentElement.dataset.owner || '';
+const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+const WD_MON = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+const MG = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const MN = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const FILTERS = [['all', 'Все'], ['fit', 'Точно моё'], ['going', 'Мои планы']];
+const EMPTY = {
+  all: 'Пока ничего впереди не нашла. Загляни попозже',
+  fit: 'Пока нет того, что точно твоё',
+  going: 'Планов пока нет. Нажми «Иду» на том, что нравится'
+};
+const S = { data: null, error: '', tab: 'cal', sel: null, filter: 'all', busy: new Set(), open: new Set(), pw: '', locked: false };
+try { S.pw = localStorage.getItem('afisha_pw') || ''; } catch (_) {}
+const $main = document.getElementById('main');
+const mqWide = matchMedia('(min-width: 700px)');  // titles inside day cells
+const mqSide = matchMedia('(min-width: 1000px)'); // day list in a side panel
+for (const q of [mqWide, mqSide]) q.addEventListener ? q.addEventListener('change', () => render()) : q.addListener(() => render());
+
+// Safe DOM builder: all text goes through text nodes, never innerHTML.
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : String(v));
+  }
+  for (const c of kids.flat(Infinity)) if (c != null && c !== false) el.append(c instanceof Node ? c : String(c));
+  return el;
+}
+
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const pd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const dayLabel = s => { const d = pd(s); return `${WD[d.getDay()]} ${d.getDate()} ${MG[d.getMonth()]}`; };
+const ts = s => { const t = Date.parse(s || ''); return isNaN(t) ? 0 : t; };
+const isDate = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+// ---------- Telegram helpers ----------
+if (tg) {
+  try { tg.ready(); tg.expand(); } catch (_) {}
+  try { tg.setHeaderColor('#ffffff'); tg.setBackgroundColor('#ffffff'); } catch (_) {}
+}
+function haptic(kind) {
+  try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred(kind); } catch (_) {}
+}
+function openUrl(u) {
+  if (!/^https?:\/\//i.test(u || '')) return toast('Ссылка какая-то странная', true);
+  if (inTg) {
+    try {
+      if (/^https?:\/\/t\.me\//i.test(u)) tg.openTelegramLink(u.replace(/^http:/i, 'https:'));
+      else tg.openLink(u);
+      return;
+    } catch (_) {}
+  }
+  const w = window.open(u, '_blank');
+  if (w) try { w.opener = null; } catch (_) {}
+}
+function askConfirm(text, cb) {
+  if (inTg && tg.showConfirm && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
+    try { tg.showConfirm(text, ok => ok && cb()); return; } catch (_) {}
+  }
+  if (window.confirm(text)) cb();
+}
+
+let toastTimer = 0;
+function toast(text, err) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.className = 'toast show' + (err ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast' + (err ? ' err' : ''); }, 3000);
+}
+
+// ---------- API ----------
+async function api(path, body) {
+  let r;
+  try {
+    const headers = { 'X-Init-Data': (tg && tg.initData) || '' };
+    if (body) headers['Content-Type'] = 'application/json';
+    r = await fetch(path, { method: body ? 'POST' : 'GET', headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
+  } catch (_) {
+    throw new Error('Нет связи с пупой, попробуй ещё раз');
+  }
+  let j = null;
+  try { j = await r.json(); } catch (_) {}
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.error) || 'Что-то пошло не так, попробуй ещё раз');
+  return j;
+}
+
+async function pubState() {
+  let r;
+  try { r = await fetch(LOCKED ? 'events.enc.json' : 'events.json', { cache: 'no-store' }); } catch (_) { throw new Error('Нет связи, попробуй ещё раз'); }
+  if (!r.ok) throw new Error('Не получилось загрузить афишу');
+  const j = await r.json();
+  return LOCKED ? decrypt(j, S.pw) : j;
+}
+
+// AES-GCM, ключ из пароля через PBKDF2-SHA256 — так же шифрует publish.py
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decrypt(box, pw) {
+  if (!pw) throw new Error('LOCKED');
+  try {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(box.salt), iterations: box.iter, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(box.iv) }, key, b64(box.ct));
+    return JSON.parse(new TextDecoder().decode(plain));
+  } catch (_) {
+    throw new Error('LOCKED');
+  }
+}
+function lockForm(wrong) {
+  const inp = h('input', { type: 'password', placeholder: 'Пароль', autocomplete: 'current-password', 'aria-label': 'Пароль' });
+  const submit = ev => {
+    ev.preventDefault();
+    S.pw = inp.value.trim();
+    try { localStorage.setItem('afisha_pw', S.pw); } catch (_) {}
+    S.locked = false; load();
+  };
+  setTimeout(() => inp.focus(), 0);
+  return h('form', { class: 'lock', onsubmit: submit },
+    h('div', null, wrong ? 'Пароль не подошёл, попробуй ещё раз' : 'Афиша по паролю'),
+    inp, h('button', { class: 'btn pri', type: 'submit' }, 'Открыть'));
+}
+
+let loadSeq = 0;
+async function load(silent) {
+  const seq = ++loadSeq;
+  if (!silent || !S.data) { S.error = ''; if (!S.data) render(); }
+  try {
+    const d = DEMO ? demoState() : PUBLIC ? await pubState() : await api('api/state');
+    if (seq !== loadSeq) return;
+    setData(d);
+  } catch (e) {
+    if (seq !== loadSeq) return;
+    if (e.message === 'LOCKED') {  // нет пароля или он сменился
+      S.locked = true; S.wrong = !!S.pw; S.data = null;
+      try { localStorage.removeItem('afisha_pw'); } catch (_) {}
+    } else if (S.data) toast(e.message, true); else S.error = e.message;
+  }
+  render();
+}
+
+function setData(d) {
+  const today = isDate(d && d.today) ? d.today : iso(new Date());
+  const events = (Array.isArray(d && d.events) ? d.events : [])
+    .filter(e => e && e.key && isDate(e.date))
+    .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+  S.data = { city_name: (d && d.city_name) || '', today, events };
+  if (!S.sel || !isDate(S.sel) || S.sel.slice(0, 7) < today.slice(0, 7)) S.sel = defaultDay();
+}
+function defaultDay() {
+  const { today, events } = S.data;
+  const next = events.find(e => e.date >= today);
+  return next ? next.date : today;
+}
+
+// ---------- actions ----------
+async function act(e, path, body, apply, fallbackMsg) {
+  if (S.busy.has(e.key)) return;
+  const a = document.activeElement, fk = a && a.dataset && a.dataset.f;
+  S.busy.add(e.key); render();
+  try {
+    const r = DEMO ? await demoReply(path) : await api(path, body);
+    const cur = S.data.events.find(x => x.key === e.key) || e;
+    apply(cur, r);
+    toast(r.message || fallbackMsg);
+    haptic('success');
+  } catch (err) {
+    toast(err.message, true);
+    haptic('error');
+  } finally {
+    S.busy.delete(e.key); render(fk);
+  }
+}
+const go = e => act(e, 'api/go', { key: e.key }, (cur, r) => { if (r.status !== 'past') cur.plan = 'going'; }, 'Отметила');
+const skip = e => askConfirm('Убрать из планов?', () =>
+  act(e, 'api/skip', { key: e.key }, cur => { cur.plan = 'skipped'; }, 'Убрала из планов'));
+const vote = (e, v) => act(e, 'api/vote', { key: e.key, vote: v }, cur => { cur.vote = v; },
+  v === 'up' ? 'Запомнила: такое нравится' : 'Запомнила: такое не надо');
+
+// ---------- rendering ----------
+function card(e, inFeed) {
+  const past = e.date < S.data.today;
+  const busy = S.busy.has(e.key);
+  const going = e.plan === 'going';
+  const fit = Math.max(0, Math.min(5, Number(e.fit) || 0));
+  const isNew = inFeed && ts(e.found) > 0 && Date.now() - ts(e.found) < 864e5;
+  const acts = [];
+  if (!past && !PUBLIC) {
+    if (going) acts.push(h('span', { class: 'btn done' }, 'Иду ✓'),
+      h('button', { class: 'btn', type: 'button', disabled: busy, 'data-f': 'skip:' + e.key, onclick: () => skip(e) }, 'Пас'));
+    else acts.push(h('button', { class: 'btn pri', type: 'button', disabled: busy, 'data-f': 'go:' + e.key, onclick: () => go(e) }, '✅ Иду'));
+  }
+  if (!PUBLIC) acts.push(
+    h('button', { class: 'btn ic' + (e.vote === 'up' ? ' on' : ''), type: 'button', 'aria-label': 'Нравится',
+      'aria-pressed': String(e.vote === 'up'), disabled: busy, 'data-f': 'up:' + e.key, onclick: () => vote(e, 'up') }, '👍'),
+    h('button', { class: 'btn ic' + (e.vote === 'down' ? ' on' : ''), type: 'button', 'aria-label': 'Не моё',
+      'aria-pressed': String(e.vote === 'down'), disabled: busy, 'data-f': 'down:' + e.key, onclick: () => vote(e, 'down') }, '👎'));
+  if (e.link) acts.push(h('button', { class: 'btn', type: 'button', title: e.source || '', onclick: () => openUrl(e.link) }, 'Источник'));
+  if (e.signup_url) acts.push(h('button', { class: 'btn', type: 'button', onclick: () => openUrl(e.signup_url) }, 'Записаться'));
+  return h('article', { class: 'card' + (past ? ' past' : '') },
+    h('div', { class: 'ch' },
+      h('h3', null, e.title || 'Без названия'),
+      fit ? h('span', { class: 'fit', title: `подходит на ${fit} из 5`, 'aria-label': `подходит на ${fit} из 5` },
+        [1, 2, 3, 4, 5].map(i => h('i', { class: i <= fit ? 'on' : '' }))) : null),
+    h('div', { class: 'meta' }, dayLabel(e.date) + (e.time ? `, ${e.time}` : '')),
+    e.place ? h('div', { class: 'sub' }, e.place) : null,
+    e.price ? h('div', { class: 'sub' }, e.price) : null,
+    e.why ? h('div', { class: 'why' }, e.why) : null,
+    e.details && S.open.has(e.key) ? h('div', { class: 'details' }, e.details) : null,
+    e.details ? h('button', { class: 'link', type: 'button', 'aria-expanded': String(S.open.has(e.key)), 'data-f': 'more:' + e.key,
+      onclick: () => { S.open.has(e.key) ? S.open.delete(e.key) : S.open.add(e.key); render(); } }, S.open.has(e.key) ? 'Свернуть' : 'Подробнее') : null,
+    h('div', { class: 'badges' },
+      isNew ? h('span', { class: 'badge new' }, 'новое') : null,
+      going ? h('span', { class: 'badge go' }, '✓ Иду') : null,
+      going && e.in_calendar ? h('span', { class: 'badge go' }, 'в календаре') : null,
+      e.sent ? h('span', { class: 'badge' }, 'пришло в чат') : null),
+    h('div', { class: 'acts' }, acts));
+}
+
+function monthGrid(y, m, by, today) {
+  const g = h('div', { class: 'grid' }, WD_MON.map((w, i) => h('div', { class: 'wd' + (i > 4 ? ' we' : '') }, w)));
+  const off = (new Date(y, m, 1).getDay() + 6) % 7;
+  const n = new Date(y, m + 1, 0).getDate();
+  for (let i = 0; i < off; i++) g.append(h('div', { class: 'blank' + (i > 4 ? ' we' : '') }));
+  for (let d = 1; d <= n; d++) {
+    const ds = `${y}-${pad(m + 1)}-${pad(d)}`;
+    const evs = by[ds] || [];
+    const going = evs.some(e => e.plan === 'going');
+    const cls = ['day'];
+    if ((off + d - 1) % 7 > 4) cls.push('we');
+    if (ds < today) cls.push('past');
+    if (ds === today) cls.push('today');
+    if (ds === S.sel) cls.push('sel');
+    const label = `${dayLabel(ds)}${evs.length ? `, событий: ${evs.length}` : ''}${going ? ', ты идёшь' : ''}`;
+    const line = e => (e.time ? e.time + ' ' : '') + (e.title || '');
+    const shown = evs.length > 3 ? 2 : 3;
+    g.append(h('button', { class: cls.join(' '), type: 'button', 'aria-label': label, 'data-f': 'day:' + ds,
+      title: evs.length ? evs.map(line).join('\n') : null, onclick: () => { S.sel = ds; render(); } },
+      h('span', null, d),
+      evs.length ? h('span', { class: 'mk' + (going ? ' go' : '') + (evs.length === 1 ? ' dot' : '') }, evs.length > 1 ? evs.length : '') : null,
+      mqWide.matches ? evs.slice(0, shown).map(e => h('span', { class: 'ev' + (e.plan === 'going' ? ' go' : '') }, line(e))) : null,
+      mqWide.matches && evs.length > shown ? h('span', { class: 'more' }, `+${evs.length - shown}`) : null));
+  }
+  return h('section', { class: 'month' }, h('h2', null, `${MN[m]} ${y}`), g);
+}
+
+// First and last selectable day: from the 1st of the current month to the end of the latest event's month.
+function calRange() {
+  const { today, events } = S.data;
+  const last = pd(events.reduce((mx, e) => (e.date > mx ? e.date : mx), today));
+  return [today.slice(0, 8) + '01', iso(new Date(last.getFullYear(), last.getMonth() + 1, 0))];
+}
+
+function renderCal() {
+  const { today, events } = S.data;
+  const by = {};
+  for (const e of events) (by[e.date] = by[e.date] || []).push(e);
+  const side = mqSide.matches;
+  const evs = by[S.sel] || [];
+  const panel = h('section', { class: side ? 'side' : null }, h('h3', { class: 'dh' }, dayLabel(S.sel)),
+    evs.length ? evs.map(e => card(e, false)) : h('p', { class: 'note' }, 'В этот день ничего не нашла'));
+  const months = [];
+  if (!events.length) months.push(h('p', { class: 'note' }, 'Пока ничего не нашла — загляни попозже'));
+  const last = pd(calRange()[1]);
+  let y = pd(today).getFullYear(), m = pd(today).getMonth();
+  while (y < last.getFullYear() || (y === last.getFullYear() && m <= last.getMonth())) {
+    months.push(monthGrid(y, m, by, today));
+    if (!side && S.sel.slice(0, 7) === `${y}-${pad(m + 1)}`) months.push(panel);
+    if (++m > 11) { m = 0; y++; }
+  }
+  return side ? h('div', { class: 'calwrap' }, h('div', null, months), panel) : months;
+}
+
+function renderFeed() {
+  const { today, events } = S.data;
+  let list = events.filter(e => e.date >= today);
+  if (S.filter === 'fit') list = list.filter(e => (Number(e.fit) || 0) >= 4);
+  if (S.filter === 'going') list = list.filter(e => e.plan === 'going');
+  list = list.slice().sort((a, b) => ts(b.found) - ts(a.found));
+  const chips = PUBLIC ? null : h('div', { class: 'chips' }, FILTERS.map(([k, t]) =>
+    h('button', { class: 'chip' + (S.filter === k ? ' on' : ''), type: 'button', 'aria-pressed': String(S.filter === k), 'data-f': 'chip:' + k,
+      onclick: () => { S.filter = k; render(); } }, t)));
+  return [chips, list.length ? list.map(e => card(e, true)) : h('div', { class: 'state' }, EMPTY[S.filter])];
+}
+
+function render(focusKey) {
+  document.getElementById('city').textContent = (S.data && S.data.city_name) || '';
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
+  let kids;
+  if (S.locked) kids = lockForm(S.wrong);
+  else if (!S.data) {
+    kids = S.error
+      ? h('div', { class: 'state' }, h('div', null, S.error), h('button', { class: 'btn pri', type: 'button', onclick: () => load() }, 'Повторить'))
+      : h('div', { class: 'state' }, 'Загружаю…');
+  } else kids = S.tab === 'cal' ? renderCal() : h('div', { class: 'feed' }, renderFeed());
+  const a = document.activeElement, fk = focusKey || (a && a.dataset && a.dataset.f); // keep keyboard focus across re-renders
+  $main.replaceChildren(...[kids].flat(Infinity));
+  if (fk) { const el = $main.querySelector(`[data-f="${CSS.escape(fk)}"]`); if (el) el.focus({ preventScroll: true }); }
+}
+
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+  S.tab = b.dataset.tab; render(); window.scrollTo(0, 0);
+}));
+document.addEventListener('keydown', ev => {
+  if (S.tab !== 'cal' || !S.data || ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
+  if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+  if (ev.target && /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)) return;
+  const d = pd(S.sel);
+  d.setDate(d.getDate() + (ev.key === 'ArrowRight' ? 1 : -1));
+  const ds = iso(d), [lo, hi] = calRange();
+  if (ds < lo || ds > hi) return;
+  ev.preventDefault();
+  S.sel = ds; render();
+  const el = $main.querySelector(`[data-f="${CSS.escape('day:' + ds)}"]`);
+  if (el) el.focus({ preventScroll: true }), el.scrollIntoView({ block: 'nearest' });
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !DEMO) load(true);
+});
+
+// ---------- demo mode (?demo=1) ----------
+function demoState() {
+  const now = new Date();
+  const day = n => iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() + n));
+  const ago = hrs => new Date(now.getTime() - hrs * 3600e3).toISOString();
+  const ev = (key, n, title, o) => Object.assign({ key, date: day(n), title, time: null, place: null, price: null, why: '', fit: 3,
+    link: 'https://t.me/spb_events/100', source: 'Пост в канале', signup_url: null, found: ago(48), sent: false,
+    plan: null, in_calendar: false, vote: null }, o);
+  const tp = { link: 'https://spb.timepad.ru/event/3123456/', source: 'Страница на Таймпаде' };
+  return { city: 'spb', city_name: 'Петербург', today: day(0), events: [
+    ev('d0', -3, 'Мужской круг: про злость', { time: '19:30', place: 'Пространство «Точка», Лиговский 50', plan: 'going', sent: true, fit: 4, found: ago(120) }),
+    ev('d1', 0, 'Контактная импровизация: открытый джем', Object.assign({ time: '20:00', place: 'Студия «Дом танца», ул. Рубинштейна 8', price: '700 ₽',
+      why: 'Ты любишь джемы без жёсткой программы — тут как раз свободный формат.', fit: 4, found: ago(3), signup_url: 'https://spb.timepad.ru/event/3123456/' }, tp)),
+    ev('d2', 2, 'Ecstatic Dance с Dj Ivan Suvorov', { time: '17:30', place: 'Лофт «Кирпич», наб. Обводного канала 74', price: '1500 ₽',
+      why: 'Экстатик с живым диджеем, которого ты уже отмечал.',
+      details: 'Три часа свободного танца без алкоголя и разговоров.\nНачало с короткой разминки и настройки.\nПотом волна: от медленного к пиковому и обратно.\nВ конце — шавасана и чай.\nВзять удобную одежду и воду.', fit: 5, plan: 'going', in_calendar: true, sent: true, vote: 'up',
+      link: 'https://t.me/ecstaticspb/412', found: ago(30), signup_url: 'https://t.me/ivan_suvorov_dj' }),
+    ev('d3', 2, 'Чайная церемония и разговор о тишине', { time: '12:00', price: 'донейшн', fit: 2, found: ago(70) }),
+    ev('d4', 5, 'Тантра-практикум для начинающих', { place: 'Центр «Прана», Невский 102', price: 'по донейшн',
+      why: 'Мягкий вход в тантру, без эзотерики, с телесными практиками.',
+      details: 'Ведущая — Анна, 10 лет практики.\nРабота в парах по желанию, можно прийти одному.\nОдежда закрытая, практики без раздевания.', fit: 4, sent: true, found: ago(10) }),
+    ev('d5', 8, 'Спектакль «Сны Ивана» в иммерсивном театре', Object.assign({ time: '19:00', place: 'Театр «Сфера», Гороховая 33', price: 'от 2200 ₽',
+      why: 'Иммерсивный театр с участием зрителя.', fit: 3, vote: 'down', found: ago(52) }, tp)),
+    ev('d6', 12, 'Звуковая медитация с гонгами', { time: '11:00', place: 'Йога-студия «Луч»', price: '900 ₽', fit: 2, found: ago(90) }),
+    ev('d7', 16, 'Ecstatic Dance: зимний сезон открыт', { time: '18:00', place: 'Лофт «Кирпич»', price: '1500 ₽', fit: 5, plan: 'going', sent: true,
+      why: 'Тот же лофт и та же команда, что тебе понравились.', found: ago(1) }),
+    ev('d8', 20, 'Дыхательная практика и чай после', { time: '11:00', place: 'Пространство «Тихо», Васильевский остров', price: '1000 ₽', fit: 3, found: ago(6) })
+  ] };
+}
+function demoReply(path) {
+  const msg = { 'api/go': 'Отметила. Подробности и «В календарь» — в чате с ботом', 'api/skip': 'Убрала из планов' };
+  return new Promise(res => setTimeout(() => res({ ok: true, status: 'new', message: msg[path] }), 350));
+}
+
+load();
+</script>
+</body>
+</html>
